@@ -1,49 +1,88 @@
-import { Avatar, AvatarBadge, Box, HStack, Heading, Spacer, Stack, useColorMode, Text } from '@chakra-ui/react'
-import { AtSignIcon, SunIcon, MoonIcon } from '@chakra-ui/icons'
-import DummyCard from '../components/DummyCard'
-import ThreadLayout from './layout'
+import {
+    Box,
+    HStack,
+    Heading,
+    Spacer,
+    Stack,
+    useColorMode,
+} from "@chakra-ui/react";
+import { AtSignIcon, SunIcon, MoonIcon } from "@chakra-ui/icons";
+import DummyCard from "./components/DummyCard";
+import LoadingState from "./components/LoadingState";
+import ThreadLayout from "./layout";
+import { useEffect, useState } from "react";
 
 const Page = () => {
+    const { colorMode, toggleColorMode } = useColorMode();
+    const [movieList, setMovieList] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const {colorMode, toggleColorMode} = useColorMode()
+    async function getMovies() {
+        const options = {
+            method: "GET",
+            headers: {
+                accept: "application/json",
+                Authorization:
+                    "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhZDI1ZjA5YzAzMGM2ZWQ2MzkxNTg4YmZmNThhZGMyZCIsInN1YiI6IjY0ZGI2NmMzMDAxYmJkMDQxYWYzMjYwMSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.3TRLrjJwVsMyxvnOiNcGCnVBJthmalDPhm-mOAYOY6Q",
+            },
+        };
+
+        const movies = await fetch(
+            "https://api.themoviedb.org/3/discover/movie?include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc",
+            options
+        )
+            .then((response) => response.json())
+            .then((response) => {
+                setLoading(false);
+                return setMovieList(response.results);
+            })
+            .catch((err) => console.error(err));
+    }
+
+    useEffect(() => {
+        setTimeout(getMovies, 1000);
+    }, []);
 
     return (
         <ThreadLayout>
             <Box mt={8} mb={8}>
-                <HStack> 
+                <HStack>
                     <HStack>
                         <AtSignIcon boxSize={7} />
-                        <Heading>
-                            Threads
-                        </Heading>
+                        <Heading>MovThreads</Heading>
                     </HStack>
                     <Spacer />
                     <HStack>
-                        <Avatar mr={2}>
-                            <AvatarBadge boxSize='1.25em' bg='green.500' />
-                        </Avatar>
-                        <Stack spacing='0'>
-                            <Text fontWeight='600' mr={5}>Jonathan Christopher</Text>
-                            <Text fontWeight='300'>Web Developer</Text>
-                        </Stack>
-                        
-                        {
-                            colorMode == 'dark' ? <SunIcon boxSize={7} onClick={toggleColorMode} /> : <MoonIcon boxSize={7} onClick={toggleColorMode} />
-                        }
+                        {colorMode == "dark" ? (
+                            <SunIcon boxSize={7} onClick={toggleColorMode} />
+                        ) : (
+                            <MoonIcon boxSize={7} onClick={toggleColorMode} />
+                        )}
                     </HStack>
                 </HStack>
             </Box>
 
-            <Stack overflowY='scroll' mb={8}>
-                <DummyCard />
-                <DummyCard />
-                <DummyCard />
-                <DummyCard />
-                <DummyCard />
-                <DummyCard />
-            </Stack>
+            {loading ? (
+                <LoadingState />
+            ) : (
+                <Stack mb={8}>
+                    {movieList.map((item, index) => {
+                        return (
+                            <DummyCard
+                                key={index}
+                                title={item.original_title}
+                                overview={`${item.overview.substring(
+                                    0,
+                                    100
+                                )}...`}
+                                poster={`https://image.tmdb.org/t/p/original/${item.poster_path}`}
+                            />
+                        );
+                    })}
+                </Stack>
+            )}
         </ThreadLayout>
-    )
-}
+    );
+};
 
-export default Page
+export default Page;
